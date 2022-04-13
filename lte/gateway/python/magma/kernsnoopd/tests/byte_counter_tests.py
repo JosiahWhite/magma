@@ -48,7 +48,7 @@ class ByteCounterTests(unittest.TestCase):
             ' ',
         )
         key = MagicMock()
-        key.pid = 0
+        key.pid, key.comm = None, b'subscriberdb'
         self.assertEqual(
             'subscriberdb',
             self.byte_counter._get_source_service(key),
@@ -59,9 +59,9 @@ class ByteCounterTests(unittest.TestCase):
         """
         Test _get_source_service native service happy path
         """
-        cmdline_mock.return_value = 'sessiond'.split(' ')
+        cmdline_mock.return_value = 'systemctl service magma.sessiond'.split(' ')
         key = MagicMock()
-        key.pid, key.comm = 0, b'sessiond'
+        key.pid, key.comm = None, b'sessiond'
         self.assertEqual(
             'sessiond',
             self.byte_counter._get_source_service(key),
@@ -74,21 +74,24 @@ class ByteCounterTests(unittest.TestCase):
         """
         cmdline_mock.return_value = 'sshd'.split(' ')
         key = MagicMock()
-        key.pid, key.comm = 0, b'sshd'
+        key.pid, key.comm = None, b'sshd'
         self.assertRaises(
             ValueError, self.byte_counter._get_source_service,
             key,
         )
 
     @unittest.mock.patch('magma.kernsnoopd.metrics.MAGMA_BYTES_SENT_TOTAL')
-    def test_handle_magma_counters(self, bytes_count_mock):
+    @unittest.mock.patch('psutil.Process.cmdline')
+    def test_handle_magma_counters(self, cmdline_mock, bytes_count_mock):
         """
         Test handle with Magma service to Magma service traffic
         """
         bytes_count_mock.labels = MagicMock(return_value=MagicMock())
-
+        cmdline_mock.return_value = 'python3 -m magma.subscriberdb.main'.split(
+            ' ',
+        )
         key = MagicMock()
-        key.pid, key.comm = 0, b'subscriberdb'
+        key.pid, key.comm = None, b'subscriberdb'
         key.family = AF_INET
         # 16777343 is "127.0.0.1" packed as a 4 byte int
         key.daddr = self.byte_counter.Addr(16777343, 0)
@@ -106,14 +109,16 @@ class ByteCounterTests(unittest.TestCase):
         bytes_count_mock.labels.return_value.inc.assert_called_once_with(100)
 
     @unittest.mock.patch('magma.kernsnoopd.metrics.LINUX_BYTES_SENT_TOTAL')
-    def test_handle_linux_counters(self, bytes_count_mock):
+    @unittest.mock.patch('psutil.Process.cmdline')
+    def test_handle_linux_counters(self, cmdline_mock, bytes_count_mock):
         """
         Test handle with Linux binary traffic
         """
         bytes_count_mock.labels = MagicMock(return_value=MagicMock())
+        cmdline_mock.return_value = 'sshd'.split(' ')
 
         key = MagicMock()
-        key.pid, key.comm = 0, b'sshd'
+        key.pid, key.comm = None, b'sshd'
         key.family = AF_INET6
         # localhost in IPv6 with embedded IPv4
         # ::ffff:127.0.0.1 = 0x0100007FFFFF0000

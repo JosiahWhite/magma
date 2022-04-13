@@ -167,8 +167,10 @@ class ByteCounter(EBPFHandler):
             # get python service name from command line args
             # e.g. "python3 -m magma.state.main"
             cmdline = self._get_cmdline(key.pid)
-            if cmdline[2].startswith('magma.'):
-                return cmdline[2].split('.')[1]
+            if len(cmdline) > 1 and cmdline[2].startswith('magma.'):
+                python_service = cmdline[2].split('.')[1]
+                if len(python_service) > 0:  # TODO: testing
+                    return python_service
         # key.pid process has exited or was not a Python service
         except (psutil.NoSuchProcess, IndexError):
             binary_name = key.comm.decode()

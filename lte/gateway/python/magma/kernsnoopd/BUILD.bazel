@@ -52,5 +52,6 @@ py_library(
     deps = [
         requirement("jinja2"),
         requirement("psutil"),
+        requirement("prometheus_client"),
     ],
 )
