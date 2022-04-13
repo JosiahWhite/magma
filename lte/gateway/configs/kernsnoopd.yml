@@ -17,6 +17,5 @@ log_level: INFO
 collect_interval: 10
 
 # ebpf_programs are the ebpf source filenames that kernsnoopd will load.
-ebpf_programs:
-  ~
-#  - byte_count
+ebpf_programs: 
+  - byte_count
